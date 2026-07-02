@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+// GitHub Pages de proyecto: salazarfelipe.github.io/finance-os
+const BASE_PATH = "/finance-os";
+
 const nextConfig: NextConfig = {
   output: "export",
   images: {
@@ -12,9 +15,13 @@ const nextConfig: NextConfig = {
     "@finance-os/ui",
     "@finance-os/shared",
   ],
-  // GitHub Pages de proyecto: salazarfelipe.github.io/finance-os
-  basePath: "/finance-os",
-  assetPrefix: "/finance-os/",
+  basePath: BASE_PATH,
+  assetPrefix: `${BASE_PATH}/`,
+  env: {
+    // Assets estáticos (como sql-wasm.wasm) hay que pedirlos con el basePath a mano:
+    // fetch()/indexedDB no pasan por el helper de Next que sí lo hace automáticamente.
+    NEXT_PUBLIC_BASE_PATH: BASE_PATH,
+  },
 };
 
 export default nextConfig;

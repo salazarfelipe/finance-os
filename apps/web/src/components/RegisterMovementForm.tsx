@@ -1,0 +1,226 @@
+"use client";
+
+import { useMemo, useState, type FormEvent } from "react";
+import { RegisterExpense, RegisterIncome, TransferMoney } from "@finance-os/application";
+import { useFinanceStore } from "@/store/useFinanceStore";
+import { registerEventDeps } from "@/lib/financeApp";
+
+type MovementType = "expense" | "income" | "transfer";
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function RegisterMovementForm({ onClose }: { onClose: () => void }) {
+  const app = useFinanceStore((state) => state.app);
+  const refresh = useFinanceStore((state) => state.refresh);
+
+  const accounts = useMemo(() => app?.accounts.findAll() ?? [], [app]);
+  const categories = useMemo(() => app?.categories.findAll() ?? [], [app]);
+
+  const [type, setType] = useState<MovementType>("expense");
+  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
+  const [destinationAccountId, setDestinationAccountId] = useState(accounts[1]?.id ?? "");
+  const [categoryId, setCategoryId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(today());
+  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const categoriesForType = categories.filter(
+    (category) => type === "income" ? category.kind === "income" : category.kind === "expense",
+  );
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!app) return;
+
+    const parsedAmount = Number(amount);
+    if (!parsedAmount || parsedAmount <= 0) {
+      setError("El monto debe ser mayor a cero");
+      return;
+    }
+    if (!accountId) {
+      setError("Selecciona una cuenta");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(undefined);
+    try {
+      const deps = registerEventDeps(app);
+
+      if (type === "expense") {
+        await new RegisterExpense(deps).execute({
+          accountId,
+          amount: parsedAmount,
+          date,
+          categoryId: categoryId || undefined,
+          description: description || undefined,
+        });
+      } else if (type === "income") {
+        await new RegisterIncome(deps).execute({
+          accountId,
+          amount: parsedAmount,
+          date,
+          categoryId: categoryId || undefined,
+          description: description || undefined,
+        });
+      } else {
+        if (!destinationAccountId || destinationAccountId === accountId) {
+          throw new Error("Selecciona una cuenta destino distinta a la de origen");
+        }
+        await new TransferMoney(deps).execute({
+          sourceAccountId: accountId,
+          destinationAccountId,
+          amount: parsedAmount,
+          date,
+          description: description || undefined,
+        });
+      }
+
+      refresh();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/40 px-4">
+      <form
+        onSubmit={handleSubmit}
+        className="flex w-full max-w-md flex-col gap-3 rounded-lg bg-white p-6 dark:bg-zinc-900"
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Registrar movimiento</h2>
+          <button type="button" onClick={onClose} className="text-sm text-zinc-500">
+            Cerrar
+          </button>
+        </div>
+
+        <div className="flex gap-2 text-sm">
+          {(["expense", "income", "transfer"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setType(option)}
+              className={`flex-1 rounded px-2 py-1 ${
+                type === option
+                  ? "bg-black text-white dark:bg-white dark:text-black"
+                  : "border border-zinc-300 dark:border-zinc-700"
+              }`}
+            >
+              {option === "expense" ? "Gasto" : option === "income" ? "Ingreso" : "Transferencia"}
+            </button>
+          ))}
+        </div>
+
+        <label className="flex flex-col gap-1 text-sm">
+          {type === "transfer" ? "Cuenta origen" : "Cuenta"}
+          <select
+            className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+            value={accountId}
+            onChange={(event) => setAccountId(event.target.value)}
+          >
+            <option value="" disabled>
+              Selecciona una cuenta
+            </option>
+            {accounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {type === "transfer" && (
+          <label className="flex flex-col gap-1 text-sm">
+            Cuenta destino
+            <select
+              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+              value={destinationAccountId}
+              onChange={(event) => setDestinationAccountId(event.target.value)}
+            >
+              <option value="" disabled>
+                Selecciona una cuenta
+              </option>
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {type !== "transfer" && (
+          <label className="flex flex-col gap-1 text-sm">
+            Categoría (opcional)
+            <select
+              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+              value={categoryId}
+              onChange={(event) => setCategoryId(event.target.value)}
+            >
+              <option value="">Sin categoría</option>
+              {categoriesForType.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        <label className="flex flex-col gap-1 text-sm">
+          Monto
+          <input
+            type="number"
+            autoFocus
+            className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            placeholder="0"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          Fecha
+          <input
+            type="date"
+            className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          Descripción (opcional)
+          <input
+            className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+        </label>
+
+        {error && <p className="text-sm text-red-500">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={submitting || accounts.length === 0}
+          className="mt-2 rounded bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        >
+          {submitting ? "Guardando…" : "Registrar"}
+        </button>
+        {accounts.length === 0 && (
+          <p className="text-center text-xs text-zinc-500">
+            Primero crea al menos una cuenta en la sección Cuentas.
+          </p>
+        )}
+      </form>
+    </div>
+  );
+}

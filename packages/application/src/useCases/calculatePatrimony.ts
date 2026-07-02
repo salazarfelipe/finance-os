@@ -1,11 +1,12 @@
 import type { Id, Money } from "@finance-os/shared";
-import type { AccountKind } from "@finance-os/domain";
+import type { AccountKind, AccountSubtype } from "@finance-os/domain";
 import type { AccountRepository, MovementRepository } from "../ports";
 
 export interface AccountBalance {
   accountId: Id;
   name: string;
   kind: AccountKind;
+  subtype: AccountSubtype;
   balance: Money;
 }
 
@@ -40,7 +41,13 @@ export class CalculatePatrimony {
       const balance = balances.get(account.id) ?? 0;
       if (account.kind === "asset") totalAssets += balance;
       else totalLiabilities += balance;
-      return { accountId: account.id, name: account.name, kind: account.kind, balance };
+      return {
+        accountId: account.id,
+        name: account.name,
+        kind: account.kind,
+        subtype: account.subtype,
+        balance,
+      };
     });
 
     return {

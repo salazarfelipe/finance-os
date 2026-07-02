@@ -28,6 +28,15 @@ export class AccountRepository {
     const { columns, values } = result[0];
     return values.map((row) => rowToAccount(columns, row));
   }
+
+  findById(id: string): Account | undefined {
+    const result = this.db.exec("SELECT * FROM accounts WHERE id = ?", [id]);
+    if (result.length === 0) return undefined;
+    const { columns, values } = result[0];
+    const row = values[0];
+    if (!row) return undefined;
+    return rowToAccount(columns, row);
+  }
 }
 
 function rowToAccount(columns: string[], row: unknown[]): Account {
