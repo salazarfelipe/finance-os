@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { RegisterExpense, RegisterIncome, TransferMoney } from "@finance-os/application";
+import { RegisterExpense, RegisterIncome, RegisterSaving, TransferMoney } from "@finance-os/application";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { registerEventDeps } from "@/lib/financeApp";
 
-type MovementType = "expense" | "income" | "transfer";
+type MovementType = "expense" | "income" | "transfer" | "saving";
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -17,17 +17,20 @@ export function RegisterMovementForm({ onClose }: { onClose: () => void }) {
 
   const accounts = useMemo(() => app?.accounts.findAll() ?? [], [app]);
   const categories = useMemo(() => app?.categories.findAll() ?? [], [app]);
+  const reserves = useMemo(() => app?.reserves.findAll() ?? [], [app]);
 
   const [type, setType] = useState<MovementType>("expense");
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [destinationAccountId, setDestinationAccountId] = useState(accounts[1]?.id ?? "");
   const [categoryId, setCategoryId] = useState("");
+  const [reserveId, setReserveId] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(today());
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
 
+  const needsDestination = type === "transfer" || type === "saving";
   const categoriesForType = categories.filter(
     (category) => type === "income" ? category.kind === "income" : category.kind === "expense",
   );
@@ -67,7 +70,7 @@ export function RegisterMovementForm({ onClose }: { onClose: () => void }) {
           categoryId: categoryId || undefined,
           description: description || undefined,
         });
-      } else {
+      } else if (type === "transfer") {
         if (!destinationAccountId || destinationAccountId === accountId) {
           throw new Error("Selecciona una cuenta destino distinta a la de origen");
         }
@@ -76,6 +79,18 @@ export function RegisterMovementForm({ onClose }: { onClose: () => void }) {
           destinationAccountId,
           amount: parsedAmount,
           date,
+          description: description || undefined,
+        });
+      } else {
+        if (!destinationAccountId || destinationAccountId === accountId) {
+          throw new Error("Selecciona una cuenta destino distinta a la de origen");
+        }
+        await new RegisterSaving(deps).execute({
+          sourceAccountId: accountId,
+          destinationAccountId,
+          amount: parsedAmount,
+          date,
+          reserveId: reserveId || undefined,
           description: description || undefined,
         });
       }
@@ -103,7 +118,7 @@ export function RegisterMovementForm({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="flex gap-2 text-sm">
-          {(["expense", "income", "transfer"] as const).map((option) => (
+          {(["expense", "income", "transfer", "saving"] as const).map((option) => (
             <button
               key={option}
               type="button"
@@ -114,13 +129,19 @@ export function RegisterMovementForm({ onClose }: { onClose: () => void }) {
                   : "border border-zinc-300 dark:border-zinc-700"
               }`}
             >
-              {option === "expense" ? "Gasto" : option === "income" ? "Ingreso" : "Transferencia"}
+              {option === "expense"
+                ? "Gasto"
+                : option === "income"
+                  ? "Ingreso"
+                  : option === "transfer"
+                    ? "Transferencia"
+                    : "Ahorro"}
             </button>
           ))}
         </div>
 
         <label className="flex flex-col gap-1 text-sm">
-          {type === "transfer" ? "Cuenta origen" : "Cuenta"}
+          {needsDestination ? "Cuenta origen" : "Cuenta"}
           <select
             className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
             value={accountId}
@@ -137,7 +158,7 @@ export function RegisterMovementForm({ onClose }: { onClose: () => void }) {
           </select>
         </label>
 
-        {type === "transfer" && (
+        {needsDestination && (
           <label className="flex flex-col gap-1 text-sm">
             Cuenta destino
             <select
@@ -157,7 +178,25 @@ export function RegisterMovementForm({ onClose }: { onClose: () => void }) {
           </label>
         )}
 
-        {type !== "transfer" && (
+        {type === "saving" && (
+          <label className="flex flex-col gap-1 text-sm">
+            Reserva (opcional)
+            <select
+              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+              value={reserveId}
+              onChange={(event) => setReserveId(event.target.value)}
+            >
+              <option value="">Sin reserva</option>
+              {reserves.map((reserve) => (
+                <option key={reserve.id} value={reserve.id}>
+                  {reserve.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {(type === "income" || type === "expense") && (
           <label className="flex flex-col gap-1 text-sm">
             Categoría (opcional)
             <select

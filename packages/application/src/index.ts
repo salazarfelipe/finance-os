@@ -14,4 +14,5 @@ export * from "./useCases/calculatePatrimony";
 export * from "./useCases/generateBudget";
 export * from "./useCases/calculateBudgetProgress";
 export * from "./useCases/calculateCashFlow";
+export * from "./useCases/calculateGoalProgress";
 export * from "./useCases/generateDashboard";

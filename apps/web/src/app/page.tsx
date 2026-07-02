@@ -24,6 +24,7 @@ export default function Home() {
       app.categories,
       app.budgets,
       app.credits,
+      app.goals,
     ).execute(currentPeriod());
     // version fuerza a recalcular después de cada movimiento registrado.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,6 +107,31 @@ export default function Home() {
                   <li key={credit.creditId} className="flex justify-between">
                     <span>{credit.name}</span>
                     <span className="font-mono">{formatMoney(credit.paidAmount)}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {snapshot.goalsProgress.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <h2 className="text-sm font-medium text-zinc-500">Objetivos</h2>
+              <ul className="flex flex-col gap-2">
+                {snapshot.goalsProgress.map((goal) => (
+                  <li key={goal.goalId} className="flex flex-col gap-1">
+                    <div className="flex justify-between text-sm">
+                      <span>{goal.name}</span>
+                      <span className="text-zinc-500">
+                        {formatMoney(goal.currentAmount)} / {formatMoney(goal.targetAmount)} (
+                        {formatPercentage(goal.percentage)})
+                      </span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded bg-zinc-200 dark:bg-zinc-800">
+                      <div
+                        className="h-full bg-green-600"
+                        style={{ width: `${goal.percentage * 100}%` }}
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>

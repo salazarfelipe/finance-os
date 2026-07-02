@@ -9,6 +9,9 @@ export function NavBar() {
       <Link href="/cuentas" className="text-zinc-500 hover:text-black dark:hover:text-zinc-50">
         Cuentas
       </Link>
+      <Link href="/objetivos" className="text-zinc-500 hover:text-black dark:hover:text-zinc-50">
+        Objetivos
+      </Link>
     </nav>
   );
 }

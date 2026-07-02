@@ -6,8 +6,10 @@ import type {
   Credit,
   CreditCard,
   Event,
+  Goal,
   Movement,
   Period,
+  Reserve,
 } from "@finance-os/domain";
 
 // Puertos que los casos de uso necesitan. packages/database los implementa;
@@ -48,6 +50,17 @@ export interface CreditRepository {
 
 export interface CreditCardRepository {
   findById(id: Id): CreditCard | undefined;
+}
+
+export interface ReserveRepository {
+  insert(reserve: Reserve): void;
+  findAll(): Reserve[];
+  findById(id: Id): Reserve | undefined;
+}
+
+export interface GoalRepository {
+  insert(goal: Goal): void;
+  findAll(): Goal[];
 }
 
 export interface Persistence {

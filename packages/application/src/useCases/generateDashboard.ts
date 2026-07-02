@@ -6,11 +6,13 @@ import type {
   CategoryRepository,
   CreditRepository,
   EventRepository,
+  GoalRepository,
   MovementRepository,
 } from "../ports";
 import { CalculatePatrimony, type PatrimonySnapshot } from "./calculatePatrimony";
 import { CalculateCashFlow, type CashFlow } from "./calculateCashFlow";
 import { CalculateBudgetProgress, type BudgetProgress } from "./calculateBudgetProgress";
+import { CalculateGoalProgress, type GoalProgress } from "./calculateGoalProgress";
 
 export interface CreditPaidSummary {
   creditId: Id;
@@ -26,6 +28,7 @@ export interface DashboardSnapshot {
   savingsRate: number;
   budgetProgress: BudgetProgress;
   creditsPaid: CreditPaidSummary[];
+  goalsProgress: GoalProgress[];
 }
 
 // Agrega los demás casos de uso en una sola foto para la pantalla principal.
@@ -37,6 +40,7 @@ export class GenerateDashboard {
     private readonly categories: CategoryRepository,
     private readonly budgets: BudgetRepository,
     private readonly credits: CreditRepository,
+    private readonly goals: GoalRepository,
   ) {}
 
   execute(period: Period): DashboardSnapshot {
@@ -47,6 +51,7 @@ export class GenerateDashboard {
       this.categories,
       this.events,
     ).execute(period);
+    const goalsProgress = new CalculateGoalProgress(this.goals, this.events).execute();
 
     const liquidity = patrimony.accounts
       .filter((account) => account.subtype === "bank" || account.subtype === "cash")
@@ -68,6 +73,15 @@ export class GenerateDashboard {
       }),
     );
 
-    return { period, patrimony, liquidity, cashFlow, savingsRate, budgetProgress, creditsPaid };
+    return {
+      period,
+      patrimony,
+      liquidity,
+      cashFlow,
+      savingsRate,
+      budgetProgress,
+      creditsPaid,
+      goalsProgress,
+    };
   }
 }

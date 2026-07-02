@@ -11,4 +11,6 @@ export { CreditRepository } from "./repositories/creditRepository";
 export { CreditCardRepository } from "./repositories/creditCardRepository";
 export { CategoryRepository } from "./repositories/categoryRepository";
 export { BudgetRepository } from "./repositories/budgetRepository";
+export { ReserveRepository } from "./repositories/reserveRepository";
+export { GoalRepository } from "./repositories/goalRepository";
 export { SystemClock, UuidGenerator } from "./adapters";
