@@ -7,3 +7,4 @@ dist/
 .env
 .env.local
 .turbo/
+.claude/settings.local.json
