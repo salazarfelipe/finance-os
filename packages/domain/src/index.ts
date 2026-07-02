@@ -13,3 +13,4 @@ export * from "./budget";
 export * from "./movement";
 export * from "./event";
 export * from "./engine";
+export * from "./recurringExpense";

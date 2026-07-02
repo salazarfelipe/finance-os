@@ -20,6 +20,8 @@ export interface ExpenseEvent extends BaseEvent {
   accountId: Id;
   categoryId?: Id;
   personId?: Id;
+  // Presente cuando el evento fue generado por GenerateRecurringExpenses/CloseMonth.
+  recurringExpenseId?: Id;
 }
 
 export interface TransferEvent extends BaseEvent {

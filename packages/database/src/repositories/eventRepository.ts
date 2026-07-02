@@ -16,6 +16,7 @@ const COLUMNS = [
   "project_id",
   "credit_id",
   "credit_card_id",
+  "recurring_expense_id",
   "created_at",
 ] as const;
 
@@ -66,15 +67,21 @@ function eventToRow(event: Event): EventRow {
     project_id: null,
     credit_id: null,
     credit_card_id: null,
+    recurring_expense_id: null,
     created_at: event.createdAt,
   };
 
   switch (event.type) {
     case "income":
+      base.account_id = event.accountId;
+      base.category_id = event.categoryId ?? null;
+      base.person_id = event.personId ?? null;
+      break;
     case "expense":
       base.account_id = event.accountId;
       base.category_id = event.categoryId ?? null;
       base.person_id = event.personId ?? null;
+      base.recurring_expense_id = event.recurringExpenseId ?? null;
       break;
     case "transfer":
       base.source_account_id = event.sourceAccountId;
@@ -122,6 +129,13 @@ function rowToEvent(columns: string[], row: unknown[]): Event {
 
   switch (type) {
     case "income":
+      return {
+        ...base,
+        type,
+        accountId: record.account_id as string,
+        categoryId: (record.category_id as string | null) ?? undefined,
+        personId: (record.person_id as string | null) ?? undefined,
+      };
     case "expense":
       return {
         ...base,
@@ -129,6 +143,7 @@ function rowToEvent(columns: string[], row: unknown[]): Event {
         accountId: record.account_id as string,
         categoryId: (record.category_id as string | null) ?? undefined,
         personId: (record.person_id as string | null) ?? undefined,
+        recurringExpenseId: (record.recurring_expense_id as string | null) ?? undefined,
       };
     case "transfer":
       return {

@@ -9,6 +9,7 @@ import type {
   Goal,
   Movement,
   Period,
+  RecurringExpense,
   Reserve,
 } from "@finance-os/domain";
 
@@ -61,6 +62,12 @@ export interface ReserveRepository {
 export interface GoalRepository {
   insert(goal: Goal): void;
   findAll(): Goal[];
+}
+
+export interface RecurringExpenseRepository {
+  insert(recurringExpense: RecurringExpense): void;
+  findAll(): RecurringExpense[];
+  findActive(): RecurringExpense[];
 }
 
 export interface Persistence {

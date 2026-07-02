@@ -12,6 +12,12 @@ export function NavBar() {
       <Link href="/objetivos" className="text-zinc-500 hover:text-black dark:hover:text-zinc-50">
         Objetivos
       </Link>
+      <Link
+        href="/automatizaciones"
+        className="text-zinc-500 hover:text-black dark:hover:text-zinc-50"
+      >
+        Automatizaciones
+      </Link>
     </nav>
   );
 }

@@ -8,6 +8,7 @@ import {
   FinanceDatabase,
   GoalRepository,
   MovementRepository,
+  RecurringExpenseRepository,
   ReserveRepository,
   SystemClock,
   UuidGenerator,
@@ -25,6 +26,7 @@ export interface FinanceApp {
   creditCards: CreditCardRepository;
   reserves: ReserveRepository;
   goals: GoalRepository;
+  recurringExpenses: RecurringExpenseRepository;
   clock: SystemClock;
   ids: UuidGenerator;
 }
@@ -44,6 +46,7 @@ export async function createFinanceApp(): Promise<FinanceApp> {
     creditCards: new CreditCardRepository(db.raw),
     reserves: new ReserveRepository(db.raw),
     goals: new GoalRepository(db.raw),
+    recurringExpenses: new RecurringExpenseRepository(db.raw),
     clock: new SystemClock(),
     ids: new UuidGenerator(),
   };

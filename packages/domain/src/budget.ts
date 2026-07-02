@@ -14,3 +14,10 @@ export interface Budget {
 export function periodOf(date: ISODateString): Period {
   return date.slice(0, 7);
 }
+
+export function nextPeriod(period: Period): Period {
+  const [year, month] = period.split("-").map(Number);
+  // month (1-12) usado como índice 0-based de Date.UTC ya apunta al mes siguiente.
+  const date = new Date(Date.UTC(year, month, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}

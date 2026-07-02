@@ -16,3 +16,5 @@ export * from "./useCases/calculateBudgetProgress";
 export * from "./useCases/calculateCashFlow";
 export * from "./useCases/calculateGoalProgress";
 export * from "./useCases/generateDashboard";
+export * from "./useCases/generateRecurringExpenses";
+export * from "./useCases/closeMonth";
