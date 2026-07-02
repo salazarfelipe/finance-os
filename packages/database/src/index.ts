@@ -9,4 +9,6 @@ export { EventRepository } from "./repositories/eventRepository";
 export { MovementRepository } from "./repositories/movementRepository";
 export { CreditRepository } from "./repositories/creditRepository";
 export { CreditCardRepository } from "./repositories/creditCardRepository";
+export { CategoryRepository } from "./repositories/categoryRepository";
+export { BudgetRepository } from "./repositories/budgetRepository";
 export { SystemClock, UuidGenerator } from "./adapters";

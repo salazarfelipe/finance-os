@@ -1,5 +1,14 @@
 import type { Id, ISODateString } from "@finance-os/shared";
-import type { Account, Credit, CreditCard, Event, Movement } from "@finance-os/domain";
+import type {
+  Account,
+  Budget,
+  Category,
+  Credit,
+  CreditCard,
+  Event,
+  Movement,
+  Period,
+} from "@finance-os/domain";
 
 // Puertos que los casos de uso necesitan. packages/database los implementa;
 // gracias al tipado estructural de TypeScript, database no necesita depender
@@ -13,6 +22,18 @@ export interface AccountRepository {
 export interface EventRepository {
   insert(event: Event): void;
   findAll(): Event[];
+  findByPeriod(period: Period): Event[];
+}
+
+export interface CategoryRepository {
+  insert(category: Category): void;
+  findAll(): Category[];
+  findById(id: Id): Category | undefined;
+}
+
+export interface BudgetRepository {
+  upsert(budget: Budget): void;
+  findByPeriod(period: Period): Budget[];
 }
 
 export interface MovementRepository {

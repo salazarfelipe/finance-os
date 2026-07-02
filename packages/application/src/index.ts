@@ -10,3 +10,5 @@ export * from "./useCases/registerInterest";
 export * from "./useCases/registerCreditPayment";
 export * from "./useCases/registerCreditCardPayment";
 export * from "./useCases/calculatePatrimony";
+export * from "./useCases/generateBudget";
+export * from "./useCases/calculateBudgetProgress";

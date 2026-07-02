@@ -10,3 +10,7 @@ export interface Budget {
   plannedAmount: Money;
   createdAt: ISODateString;
 }
+
+export function periodOf(date: ISODateString): Period {
+  return date.slice(0, 7);
+}

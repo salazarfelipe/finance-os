@@ -36,6 +36,16 @@ export class EventRepository {
     const { columns, values } = result[0];
     return values.map((row) => rowToEvent(columns, row));
   }
+
+  findByPeriod(period: string): Event[] {
+    const result = this.db.exec(
+      "SELECT * FROM events WHERE substr(date, 1, 7) = ? ORDER BY date, created_at",
+      [period],
+    );
+    if (result.length === 0) return [];
+    const { columns, values } = result[0];
+    return values.map((row) => rowToEvent(columns, row));
+  }
 }
 
 type EventRow = Record<(typeof COLUMNS)[number], string | number | null>;
