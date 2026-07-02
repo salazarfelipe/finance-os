@@ -5,3 +5,8 @@ export { openDatabase, type OpenDatabaseOptions } from "./client";
 export { loadPersistedDatabase, persistDatabase } from "./persistence";
 export { runMigrations } from "./migrate";
 export { AccountRepository } from "./repositories/accountRepository";
+export { EventRepository } from "./repositories/eventRepository";
+export { MovementRepository } from "./repositories/movementRepository";
+export { CreditRepository } from "./repositories/creditRepository";
+export { CreditCardRepository } from "./repositories/creditCardRepository";
+export { SystemClock, UuidGenerator } from "./adapters";
