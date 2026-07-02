@@ -8,3 +8,4 @@ dist/
 .env.local
 .turbo/
 .claude/settings.local.json
+apps/web/public/sql-wasm.wasm
