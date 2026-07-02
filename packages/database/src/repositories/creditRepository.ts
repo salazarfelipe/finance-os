@@ -28,19 +28,30 @@ export class CreditRepository {
     const { columns, values } = result[0];
     const row = values[0];
     if (!row) return undefined;
-    const record = Object.fromEntries(columns.map((column, i) => [column, row[i]])) as Record<
-      string,
-      unknown
-    >;
-    return {
-      id: record.id as string,
-      accountId: record.account_id as string,
-      name: record.name as string,
-      principalAmount: record.principal_amount as number,
-      startDate: record.start_date as string,
-      termMonths: record.term_months as number,
-      monthlyPayment: record.monthly_payment as number,
-      createdAt: record.created_at as string,
-    };
+    return rowToCredit(columns, row);
   }
+
+  findAll(): Credit[] {
+    const result = this.db.exec("SELECT * FROM credits ORDER BY created_at");
+    if (result.length === 0) return [];
+    const { columns, values } = result[0];
+    return values.map((row) => rowToCredit(columns, row));
+  }
+}
+
+function rowToCredit(columns: string[], row: unknown[]): Credit {
+  const record = Object.fromEntries(columns.map((column, i) => [column, row[i]])) as Record<
+    string,
+    unknown
+  >;
+  return {
+    id: record.id as string,
+    accountId: record.account_id as string,
+    name: record.name as string,
+    principalAmount: record.principal_amount as number,
+    startDate: record.start_date as string,
+    termMonths: record.term_months as number,
+    monthlyPayment: record.monthly_payment as number,
+    createdAt: record.created_at as string,
+  };
 }

@@ -28,6 +28,16 @@ export default function CuentasPage() {
   // version fuerza a releer las cuentas después de cada mutación.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const accounts = useMemo<Account[]>(() => app?.accounts.findAll() ?? [], [app, version]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const credits = useMemo(() => app?.credits.findAll() ?? [], [app, version]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const creditCards = useMemo(() => app?.creditCards.findAll() ?? [], [app, version]);
+  const creditAccounts = accounts.filter(
+    (account) => account.kind === "liability" && account.subtype === "credit",
+  );
+  const creditCardAccounts = accounts.filter(
+    (account) => account.kind === "liability" && account.subtype === "credit_card",
+  );
 
   const [name, setName] = useState("");
   const [kind, setKind] = useState<AccountKind>("asset");
@@ -41,6 +51,23 @@ export default function CuentasPage() {
   const [importSubmitting, setImportSubmitting] = useState(false);
   const [importError, setImportError] = useState<string>();
   const [importMessage, setImportMessage] = useState<string>();
+
+  const [creditName, setCreditName] = useState("");
+  const [creditAccountId, setCreditAccountId] = useState("");
+  const [creditPrincipal, setCreditPrincipal] = useState("");
+  const [creditStartDate, setCreditStartDate] = useState("");
+  const [creditTermMonths, setCreditTermMonths] = useState("");
+  const [creditMonthlyPayment, setCreditMonthlyPayment] = useState("");
+  const [creditSubmitting, setCreditSubmitting] = useState(false);
+  const [creditError, setCreditError] = useState<string>();
+
+  const [cardName, setCardName] = useState("");
+  const [cardAccountId, setCardAccountId] = useState("");
+  const [cardLimit, setCardLimit] = useState("");
+  const [cardClosingDay, setCardClosingDay] = useState("");
+  const [cardDueDay, setCardDueDay] = useState("");
+  const [cardSubmitting, setCardSubmitting] = useState(false);
+  const [cardError, setCardError] = useState<string>();
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -131,6 +158,86 @@ export default function CuentasPage() {
       setImportError(err instanceof Error ? err.message : String(err));
     } finally {
       setImportSubmitting(false);
+    }
+  }
+
+  async function handleCreateCredit(event: FormEvent) {
+    event.preventDefault();
+    if (!app) return;
+    const principal = Number(creditPrincipal);
+    const term = Number(creditTermMonths);
+    const monthlyPayment = Number(creditMonthlyPayment);
+    if (
+      !creditName.trim() ||
+      !creditAccountId ||
+      !creditStartDate ||
+      !principal ||
+      !term ||
+      !monthlyPayment
+    ) {
+      setCreditError("Todos los campos son obligatorios");
+      return;
+    }
+
+    setCreditSubmitting(true);
+    setCreditError(undefined);
+    try {
+      app.credits.insert({
+        id: app.ids.generate(),
+        name: creditName.trim(),
+        accountId: creditAccountId,
+        principalAmount: principal,
+        startDate: creditStartDate,
+        termMonths: term,
+        monthlyPayment,
+        createdAt: app.clock.now(),
+      });
+      await app.db.save();
+      refresh();
+      setCreditName("");
+      setCreditAccountId("");
+      setCreditPrincipal("");
+      setCreditStartDate("");
+      setCreditTermMonths("");
+      setCreditMonthlyPayment("");
+    } catch (err) {
+      setCreditError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setCreditSubmitting(false);
+    }
+  }
+
+  async function handleCreateCard(event: FormEvent) {
+    event.preventDefault();
+    if (!app) return;
+    if (!cardName.trim() || !cardAccountId) {
+      setCardError("Nombre y cuenta son obligatorios");
+      return;
+    }
+
+    setCardSubmitting(true);
+    setCardError(undefined);
+    try {
+      app.creditCards.insert({
+        id: app.ids.generate(),
+        name: cardName.trim(),
+        accountId: cardAccountId,
+        creditLimit: cardLimit ? Number(cardLimit) : undefined,
+        closingDay: cardClosingDay ? Number(cardClosingDay) : undefined,
+        dueDay: cardDueDay ? Number(cardDueDay) : undefined,
+        createdAt: app.clock.now(),
+      });
+      await app.db.save();
+      refresh();
+      setCardName("");
+      setCardAccountId("");
+      setCardLimit("");
+      setCardClosingDay("");
+      setCardDueDay("");
+    } catch (err) {
+      setCardError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setCardSubmitting(false);
     }
   }
 
@@ -267,6 +374,229 @@ export default function CuentasPage() {
         >
           {importSubmitting ? "Importando…" : "Importar"}
         </button>
+      </form>
+
+      <div>
+        <h2 className="text-lg font-semibold">Créditos y tarjetas</h2>
+        <p className="text-sm text-zinc-500">
+          Registrar el crédito o la tarjeta (con su cuota/cupo) es lo que permite usar
+          &ldquo;Pago de crédito&rdquo; y &ldquo;Pago de tarjeta&rdquo; en &ldquo;+ Registrar
+          movimiento&rdquo;. El saldo sigue viviendo en la cuenta pasiva asociada.
+        </p>
+      </div>
+
+      <ul className="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+        {credits.length === 0 && creditCards.length === 0 && (
+          <li className="px-4 py-6 text-center text-sm text-zinc-500">
+            Todavía no has registrado ningún crédito ni tarjeta.
+          </li>
+        )}
+        {credits.map((credit) => (
+          <li key={credit.id} className="flex items-center justify-between px-4 py-3 text-sm">
+            <div>
+              <p className="font-medium">{credit.name}</p>
+              <p className="text-zinc-500">
+                Cuota {formatMoney(credit.monthlyPayment)} · {credit.termMonths} meses desde{" "}
+                {credit.startDate}
+              </p>
+            </div>
+            <p className="font-mono">{formatMoney(credit.principalAmount)}</p>
+          </li>
+        ))}
+        {creditCards.map((creditCard) => (
+          <li key={creditCard.id} className="flex items-center justify-between px-4 py-3 text-sm">
+            <div>
+              <p className="font-medium">{creditCard.name}</p>
+              <p className="text-zinc-500">
+                {creditCard.closingDay ? `Corte día ${creditCard.closingDay}` : "Sin corte"} ·{" "}
+                {creditCard.dueDay ? `Pago día ${creditCard.dueDay}` : "Sin fecha de pago"}
+              </p>
+            </div>
+            <p className="font-mono">
+              {creditCard.creditLimit ? formatMoney(creditCard.creditLimit) : "—"}
+            </p>
+          </li>
+        ))}
+      </ul>
+
+      <form
+        onSubmit={handleCreateCredit}
+        className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+      >
+        <h2 className="text-sm font-medium">Nuevo crédito</h2>
+
+        <label className="flex flex-col gap-1 text-sm">
+          Nombre
+          <input
+            className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+            value={creditName}
+            onChange={(event) => setCreditName(event.target.value)}
+            placeholder="Crédito Comfamiliar"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          Cuenta (pasivo · crédito)
+          <select
+            className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+            value={creditAccountId}
+            onChange={(event) => setCreditAccountId(event.target.value)}
+          >
+            <option value="" disabled>
+              Selecciona una cuenta
+            </option>
+            {creditAccounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="flex gap-3">
+          <label className="flex flex-1 flex-col gap-1 text-sm">
+            Monto inicial
+            <input
+              type="number"
+              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+              value={creditPrincipal}
+              onChange={(event) => setCreditPrincipal(event.target.value)}
+              placeholder="0"
+            />
+          </label>
+          <label className="flex flex-1 flex-col gap-1 text-sm">
+            Fecha de inicio
+            <input
+              type="date"
+              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+              value={creditStartDate}
+              onChange={(event) => setCreditStartDate(event.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="flex gap-3">
+          <label className="flex flex-1 flex-col gap-1 text-sm">
+            Plazo (meses)
+            <input
+              type="number"
+              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+              value={creditTermMonths}
+              onChange={(event) => setCreditTermMonths(event.target.value)}
+              placeholder="60"
+            />
+          </label>
+          <label className="flex flex-1 flex-col gap-1 text-sm">
+            Cuota mensual
+            <input
+              type="number"
+              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+              value={creditMonthlyPayment}
+              onChange={(event) => setCreditMonthlyPayment(event.target.value)}
+              placeholder="0"
+            />
+          </label>
+        </div>
+
+        {creditError && <p className="text-sm text-red-500">{creditError}</p>}
+
+        <button
+          type="submit"
+          disabled={creditSubmitting || creditAccounts.length === 0}
+          className="mt-2 rounded bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        >
+          {creditSubmitting ? "Guardando…" : "Crear crédito"}
+        </button>
+        {creditAccounts.length === 0 && (
+          <p className="text-center text-xs text-zinc-500">
+            Primero crea una cuenta pasiva de tipo &ldquo;Crédito&rdquo; arriba.
+          </p>
+        )}
+      </form>
+
+      <form
+        onSubmit={handleCreateCard}
+        className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+      >
+        <h2 className="text-sm font-medium">Nueva tarjeta</h2>
+
+        <label className="flex flex-col gap-1 text-sm">
+          Nombre
+          <input
+            className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+            value={cardName}
+            onChange={(event) => setCardName(event.target.value)}
+            placeholder="Tarjeta Nu"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          Cuenta (pasivo · tarjeta de crédito)
+          <select
+            className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+            value={cardAccountId}
+            onChange={(event) => setCardAccountId(event.target.value)}
+          >
+            <option value="" disabled>
+              Selecciona una cuenta
+            </option>
+            {creditCardAccounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="flex gap-3">
+          <label className="flex flex-1 flex-col gap-1 text-sm">
+            Cupo (opcional)
+            <input
+              type="number"
+              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+              value={cardLimit}
+              onChange={(event) => setCardLimit(event.target.value)}
+              placeholder="0"
+            />
+          </label>
+          <label className="flex flex-1 flex-col gap-1 text-sm">
+            Día de corte (opcional)
+            <input
+              type="number"
+              min={1}
+              max={31}
+              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+              value={cardClosingDay}
+              onChange={(event) => setCardClosingDay(event.target.value)}
+            />
+          </label>
+          <label className="flex flex-1 flex-col gap-1 text-sm">
+            Día de pago (opcional)
+            <input
+              type="number"
+              min={1}
+              max={31}
+              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+              value={cardDueDay}
+              onChange={(event) => setCardDueDay(event.target.value)}
+            />
+          </label>
+        </div>
+
+        {cardError && <p className="text-sm text-red-500">{cardError}</p>}
+
+        <button
+          type="submit"
+          disabled={cardSubmitting || creditCardAccounts.length === 0}
+          className="mt-2 rounded bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        >
+          {cardSubmitting ? "Guardando…" : "Crear tarjeta"}
+        </button>
+        {creditCardAccounts.length === 0 && (
+          <p className="text-center text-xs text-zinc-500">
+            Primero crea una cuenta pasiva de tipo &ldquo;Tarjeta de crédito&rdquo; arriba.
+          </p>
+        )}
       </form>
     </div>
   );
