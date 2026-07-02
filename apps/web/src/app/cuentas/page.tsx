@@ -37,6 +37,11 @@ export default function CuentasPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
 
+  const [importText, setImportText] = useState("");
+  const [importSubmitting, setImportSubmitting] = useState(false);
+  const [importError, setImportError] = useState<string>();
+  const [importMessage, setImportMessage] = useState<string>();
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!app) return;
@@ -69,6 +74,63 @@ export default function CuentasPage() {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  const importableKinds: AccountKind[] = ["asset", "liability"];
+  const importableSubtypes = Array.from(
+    new Set(importableKinds.flatMap((k) => SUBTYPES_BY_KIND[k].map((s) => s.value))),
+  );
+
+  async function handleImport(event: FormEvent) {
+    event.preventDefault();
+    if (!app) return;
+
+    setImportSubmitting(true);
+    setImportError(undefined);
+    setImportMessage(undefined);
+    try {
+      const parsed: unknown = JSON.parse(importText);
+      if (!Array.isArray(parsed)) throw new Error("El JSON debe ser un arreglo de cuentas");
+
+      for (const [index, raw] of parsed.entries()) {
+        const entry = raw as Record<string, unknown>;
+        if (typeof entry.name !== "string" || !entry.name.trim()) {
+          throw new Error(`Cuenta #${index + 1}: falta "name"`);
+        }
+        if (!importableKinds.includes(entry.kind as AccountKind)) {
+          throw new Error(`Cuenta #${index + 1}: "kind" debe ser asset o liability`);
+        }
+        if (!importableSubtypes.includes(entry.subtype as AccountSubtype)) {
+          throw new Error(`Cuenta #${index + 1}: "subtype" inválido`);
+        }
+        if (typeof entry.openingBalance !== "number") {
+          throw new Error(`Cuenta #${index + 1}: "openingBalance" debe ser numérico`);
+        }
+
+        app.accounts.insert({
+          id: app.ids.generate(),
+          name: entry.name.trim(),
+          kind: entry.kind as AccountKind,
+          subtype: entry.subtype as AccountSubtype,
+          institution:
+            typeof entry.institution === "string" && entry.institution.trim()
+              ? entry.institution.trim()
+              : undefined,
+          openingBalance: entry.openingBalance,
+          isArchived: false,
+          createdAt: app.clock.now(),
+        });
+      }
+
+      await app.db.save();
+      refresh();
+      setImportMessage(`${parsed.length} cuenta(s) importada(s).`);
+      setImportText("");
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setImportSubmitting(false);
     }
   }
 
@@ -178,6 +240,32 @@ export default function CuentasPage() {
           className="mt-2 rounded bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
         >
           {submitting ? "Guardando…" : "Crear cuenta"}
+        </button>
+      </form>
+
+      <form
+        onSubmit={handleImport}
+        className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+      >
+        <h2 className="text-sm font-medium">Importar cuentas (JSON)</h2>
+        <p className="text-xs text-zinc-500">
+          Pega un arreglo de cuentas y créalas todas de una vez. Útil para cargar tus cuentas
+          reales sin escribirlas una por una.
+        </p>
+        <textarea
+          className="h-40 rounded border border-zinc-300 px-2 py-1 font-mono text-xs dark:border-zinc-700 dark:bg-zinc-900"
+          value={importText}
+          onChange={(event) => setImportText(event.target.value)}
+          placeholder='[{"name":"Bancolombia","kind":"asset","subtype":"bank","institution":"Bancolombia","openingBalance":14870000}]'
+        />
+        {importError && <p className="text-sm text-red-500">{importError}</p>}
+        {importMessage && <p className="text-sm text-green-600">{importMessage}</p>}
+        <button
+          type="submit"
+          disabled={importSubmitting || !importText.trim()}
+          className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium disabled:opacity-50 dark:border-zinc-700"
+        >
+          {importSubmitting ? "Importando…" : "Importar"}
         </button>
       </form>
     </div>
