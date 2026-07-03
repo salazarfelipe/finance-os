@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CalculatePatrimony } from "@finance-os/application";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { formatMoney } from "@/lib/money";
 import { NewAccountModal } from "@/components/NewAccountModal";
@@ -22,6 +23,14 @@ export default function CuentasPage() {
   const credits = useMemo(() => app?.credits.findAll() ?? [], [app, version]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const creditCards = useMemo(() => app?.creditCards.findAll() ?? [], [app, version]);
+  // El saldo real es openingBalance + movimientos, no el campo estático de la cuenta.
+  // version fuerza a recalcular después de cada mutación.
+  const balanceByAccountId = useMemo(() => {
+    if (!app) return new Map<string, number>();
+    const patrimony = new CalculatePatrimony(app.accounts, app.movements).execute();
+    return new Map(patrimony.accounts.map((account) => [account.accountId, account.balance]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [app, version]);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-6 py-8">
@@ -64,7 +73,9 @@ export default function CuentasPage() {
                 {account.kind === "asset" ? "Activo" : "Pasivo"} · {account.institution ?? "—"}
               </p>
             </div>
-            <p className="font-mono">{formatMoney(account.openingBalance)}</p>
+            <p className="font-mono">
+              {formatMoney(balanceByAccountId.get(account.id) ?? account.openingBalance)}
+            </p>
           </li>
         ))}
       </ul>
