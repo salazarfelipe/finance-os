@@ -31,9 +31,13 @@ export interface FinanceApp {
   ids: UuidGenerator;
 }
 
-export async function createFinanceApp(): Promise<FinanceApp> {
+export function wasmUrl(): string {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-  const db = await FinanceDatabase.open({ wasmUrl: `${basePath}/sql-wasm.wasm` });
+  return `${basePath}/sql-wasm.wasm`;
+}
+
+export async function createFinanceApp(): Promise<FinanceApp> {
+  const db = await FinanceDatabase.open({ wasmUrl: wasmUrl() });
 
   return {
     db,

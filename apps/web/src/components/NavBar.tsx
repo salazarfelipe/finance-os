@@ -24,6 +24,12 @@ export function NavBar() {
       >
         Automatizaciones
       </Link>
+      <Link
+        href="/sincronizar"
+        className="text-zinc-500 hover:text-black dark:hover:text-zinc-50"
+      >
+        Sincronizar
+      </Link>
     </nav>
   );
 }
