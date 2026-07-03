@@ -25,6 +25,9 @@ export class RegisterCreditPayment {
 
     const credit = this.deps.credits.findById(input.creditId);
     if (!credit) throw new Error(`No existe el crédito ${input.creditId}`);
+    if (credit.accountId === input.sourceAccountId) {
+      throw new Error("La cuenta de pago no puede ser la misma cuenta del crédito");
+    }
 
     const event: CreditPaymentEvent = {
       id: this.deps.ids.generate(),

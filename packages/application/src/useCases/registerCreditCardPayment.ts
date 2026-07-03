@@ -25,6 +25,9 @@ export class RegisterCreditCardPayment {
 
     const creditCard = this.deps.creditCards.findById(input.creditCardId);
     if (!creditCard) throw new Error(`No existe la tarjeta ${input.creditCardId}`);
+    if (creditCard.accountId === input.sourceAccountId) {
+      throw new Error("La cuenta de pago no puede ser la misma cuenta de la tarjeta");
+    }
 
     const event: CreditCardPaymentEvent = {
       id: this.deps.ids.generate(),

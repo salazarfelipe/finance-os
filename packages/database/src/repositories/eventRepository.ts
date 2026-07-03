@@ -47,6 +47,10 @@ export class EventRepository {
     const { columns, values } = result[0];
     return values.map((row) => rowToEvent(columns, row));
   }
+
+  delete(id: string): void {
+    this.db.run("DELETE FROM events WHERE id = ?", [id]);
+  }
 }
 
 type EventRow = Record<(typeof COLUMNS)[number], string | number | null>;

@@ -19,6 +19,7 @@ const TYPE_LABELS: Record<EventType, string> = {
 export default function MovimientosPage() {
   const app = useFinanceStore((state) => state.app);
   const version = useFinanceStore((state) => state.version);
+  const refresh = useFinanceStore((state) => state.refresh);
 
   // version fuerza a releer después de cada mutación.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -67,6 +68,19 @@ export default function MovimientosPage() {
     }
   }
 
+  async function handleDelete(eventId: string) {
+    if (!app) return;
+    const proceed = window.confirm(
+      "¿Eliminar este movimiento? Esto también revierte su efecto en el saldo de las cuentas.",
+    );
+    if (!proceed) return;
+
+    app.movements.deleteByEventId(eventId);
+    app.events.delete(eventId);
+    await app.db.save();
+    refresh();
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 py-8">
       <div>
@@ -91,7 +105,16 @@ export default function MovimientosPage() {
                   {detail ? ` · ${detail}` : ""}
                 </p>
               </div>
-              <p className="font-mono">{formatMoney(event.amount)}</p>
+              <div className="flex items-center gap-3">
+                <p className="font-mono">{formatMoney(event.amount)}</p>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(event.id)}
+                  className="text-xs text-red-500 hover:underline"
+                >
+                  Eliminar
+                </button>
+              </div>
             </li>
           );
         })}

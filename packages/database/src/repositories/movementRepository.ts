@@ -33,6 +33,10 @@ export class MovementRepository {
     );
     return rowsToMovements(result);
   }
+
+  deleteByEventId(eventId: string): void {
+    this.db.run("DELETE FROM movements WHERE event_id = ?", [eventId]);
+  }
 }
 
 function rowsToMovements(result: ReturnType<Database["exec"]>): Movement[] {
