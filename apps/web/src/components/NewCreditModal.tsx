@@ -1,12 +1,20 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import type { Credit } from "@finance-os/domain";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { Modal } from "@/components/Modal";
 
-export function NewCreditModal({ onClose }: { onClose: () => void }) {
+export function NewCreditModal({
+  onClose,
+  credit,
+}: {
+  onClose: () => void;
+  credit?: Credit;
+}) {
   const app = useFinanceStore((state) => state.app);
   const refresh = useFinanceStore((state) => state.refresh);
+  const isEditing = !!credit;
 
   const creditAccounts = useMemo(
     () =>
@@ -16,12 +24,12 @@ export function NewCreditModal({ onClose }: { onClose: () => void }) {
     [app],
   );
 
-  const [name, setName] = useState("");
-  const [accountId, setAccountId] = useState("");
-  const [principal, setPrincipal] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [termMonths, setTermMonths] = useState("");
-  const [monthlyPayment, setMonthlyPayment] = useState("");
+  const [name, setName] = useState(credit?.name ?? "");
+  const [accountId, setAccountId] = useState(credit?.accountId ?? "");
+  const [principal, setPrincipal] = useState(String(credit?.principalAmount ?? ""));
+  const [startDate, setStartDate] = useState(credit?.startDate ?? "");
+  const [termMonths, setTermMonths] = useState(String(credit?.termMonths ?? ""));
+  const [monthlyPayment, setMonthlyPayment] = useState(String(credit?.monthlyPayment ?? ""));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
@@ -48,6 +56,22 @@ export function NewCreditModal({ onClose }: { onClose: () => void }) {
     setError(undefined);
     setMessage(undefined);
     try {
+      if (isEditing) {
+        app.credits.update({
+          ...credit,
+          name: name.trim(),
+          accountId,
+          principalAmount: parsedPrincipal,
+          startDate,
+          termMonths: parsedTerm,
+          monthlyPayment: parsedMonthlyPayment,
+        });
+        await app.db.save();
+        refresh();
+        onClose();
+        return;
+      }
+
       app.credits.insert({
         id: app.ids.generate(),
         name: name.trim(),
@@ -75,7 +99,7 @@ export function NewCreditModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal title="Nuevo crédito" onClose={onClose}>
+    <Modal title={isEditing ? "Editar crédito" : "Nuevo crédito"} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
           Nombre
@@ -158,7 +182,7 @@ export function NewCreditModal({ onClose }: { onClose: () => void }) {
           disabled={submitting || creditAccounts.length === 0}
           className="mt-2 rounded bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
         >
-          {submitting ? "Guardando…" : "Crear crédito"}
+          {submitting ? "Guardando…" : isEditing ? "Guardar cambios" : "Crear crédito"}
         </button>
         {creditAccounts.length === 0 && (
           <p className="text-center text-xs text-zinc-500">

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CalculatePatrimony } from "@finance-os/application";
+import type { Account, Credit, CreditCard } from "@finance-os/domain";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { formatMoney } from "@/lib/money";
 import { NewAccountModal } from "@/components/NewAccountModal";
@@ -9,12 +10,17 @@ import { ImportAccountsModal } from "@/components/ImportAccountsModal";
 import { NewCreditModal } from "@/components/NewCreditModal";
 import { NewCreditCardModal } from "@/components/NewCreditCardModal";
 
-type OpenModal = "account" | "import" | "credit" | "card" | null;
+type ModalState =
+  | { type: "account"; account?: Account }
+  | { type: "import" }
+  | { type: "credit"; credit?: Credit }
+  | { type: "card"; creditCard?: CreditCard }
+  | null;
 
 export default function CuentasPage() {
   const app = useFinanceStore((state) => state.app);
   const version = useFinanceStore((state) => state.version);
-  const [openModal, setOpenModal] = useState<OpenModal>(null);
+  const [modal, setModal] = useState<ModalState>(null);
 
   // version fuerza a releer después de cada mutación.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -39,19 +45,20 @@ export default function CuentasPage() {
           <h1 className="text-xl font-semibold">Cuentas</h1>
           <p className="text-sm text-zinc-500">
             Tus cuentas y saldos viven solo en este navegador (IndexedDB), nunca en el código.
+            Haz clic en una cuenta para editarla.
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
           <button
             type="button"
-            onClick={() => setOpenModal("import")}
+            onClick={() => setModal({ type: "import" })}
             className="rounded border border-zinc-300 px-3 py-2 text-sm font-medium dark:border-zinc-700"
           >
             Importar JSON
           </button>
           <button
             type="button"
-            onClick={() => setOpenModal("account")}
+            onClick={() => setModal({ type: "account" })}
             className="rounded bg-black px-3 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
           >
             + Nueva cuenta
@@ -66,16 +73,22 @@ export default function CuentasPage() {
           </li>
         )}
         {accounts.map((account) => (
-          <li key={account.id} className="flex items-center justify-between px-4 py-3 text-sm">
-            <div>
-              <p className="font-medium">{account.name}</p>
-              <p className="text-zinc-500">
-                {account.kind === "asset" ? "Activo" : "Pasivo"} · {account.institution ?? "—"}
+          <li key={account.id}>
+            <button
+              type="button"
+              onClick={() => setModal({ type: "account", account })}
+              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900"
+            >
+              <div>
+                <p className="font-medium">{account.name}</p>
+                <p className="text-zinc-500">
+                  {account.kind === "asset" ? "Activo" : "Pasivo"} · {account.institution ?? "—"}
+                </p>
+              </div>
+              <p className="font-mono">
+                {formatMoney(balanceByAccountId.get(account.id) ?? account.openingBalance)}
               </p>
-            </div>
-            <p className="font-mono">
-              {formatMoney(balanceByAccountId.get(account.id) ?? account.openingBalance)}
-            </p>
+            </button>
           </li>
         ))}
       </ul>
@@ -86,20 +99,21 @@ export default function CuentasPage() {
           <p className="text-sm text-zinc-500">
             Registrar el crédito o la tarjeta (con su cuota/cupo) es lo que permite usar
             &ldquo;Pago de crédito&rdquo; y &ldquo;Pago de tarjeta&rdquo; en &ldquo;+ Registrar
-            movimiento&rdquo;. El saldo sigue viviendo en la cuenta pasiva asociada.
+            movimiento&rdquo;. El saldo sigue viviendo en la cuenta pasiva asociada. Haz clic en
+            uno para editarlo.
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
           <button
             type="button"
-            onClick={() => setOpenModal("credit")}
+            onClick={() => setModal({ type: "credit" })}
             className="rounded border border-zinc-300 px-3 py-2 text-sm font-medium dark:border-zinc-700"
           >
             + Crédito
           </button>
           <button
             type="button"
-            onClick={() => setOpenModal("card")}
+            onClick={() => setModal({ type: "card" })}
             className="rounded border border-zinc-300 px-3 py-2 text-sm font-medium dark:border-zinc-700"
           >
             + Tarjeta
@@ -114,37 +128,55 @@ export default function CuentasPage() {
           </li>
         )}
         {credits.map((credit) => (
-          <li key={credit.id} className="flex items-center justify-between px-4 py-3 text-sm">
-            <div>
-              <p className="font-medium">{credit.name}</p>
-              <p className="text-zinc-500">
-                Cuota {formatMoney(credit.monthlyPayment)} · {credit.termMonths} meses desde{" "}
-                {credit.startDate}
-              </p>
-            </div>
-            <p className="font-mono">{formatMoney(credit.principalAmount)}</p>
+          <li key={credit.id}>
+            <button
+              type="button"
+              onClick={() => setModal({ type: "credit", credit })}
+              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900"
+            >
+              <div>
+                <p className="font-medium">{credit.name}</p>
+                <p className="text-zinc-500">
+                  Cuota {formatMoney(credit.monthlyPayment)} · {credit.termMonths} meses desde{" "}
+                  {credit.startDate}
+                </p>
+              </div>
+              <p className="font-mono">{formatMoney(credit.principalAmount)}</p>
+            </button>
           </li>
         ))}
         {creditCards.map((creditCard) => (
-          <li key={creditCard.id} className="flex items-center justify-between px-4 py-3 text-sm">
-            <div>
-              <p className="font-medium">{creditCard.name}</p>
-              <p className="text-zinc-500">
-                {creditCard.closingDay ? `Corte día ${creditCard.closingDay}` : "Sin corte"} ·{" "}
-                {creditCard.dueDay ? `Pago día ${creditCard.dueDay}` : "Sin fecha de pago"}
+          <li key={creditCard.id}>
+            <button
+              type="button"
+              onClick={() => setModal({ type: "card", creditCard })}
+              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900"
+            >
+              <div>
+                <p className="font-medium">{creditCard.name}</p>
+                <p className="text-zinc-500">
+                  {creditCard.closingDay ? `Corte día ${creditCard.closingDay}` : "Sin corte"} ·{" "}
+                  {creditCard.dueDay ? `Pago día ${creditCard.dueDay}` : "Sin fecha de pago"}
+                </p>
+              </div>
+              <p className="font-mono">
+                {creditCard.creditLimit ? formatMoney(creditCard.creditLimit) : "—"}
               </p>
-            </div>
-            <p className="font-mono">
-              {creditCard.creditLimit ? formatMoney(creditCard.creditLimit) : "—"}
-            </p>
+            </button>
           </li>
         ))}
       </ul>
 
-      {openModal === "account" && <NewAccountModal onClose={() => setOpenModal(null)} />}
-      {openModal === "import" && <ImportAccountsModal onClose={() => setOpenModal(null)} />}
-      {openModal === "credit" && <NewCreditModal onClose={() => setOpenModal(null)} />}
-      {openModal === "card" && <NewCreditCardModal onClose={() => setOpenModal(null)} />}
+      {modal?.type === "account" && (
+        <NewAccountModal onClose={() => setModal(null)} account={modal.account} />
+      )}
+      {modal?.type === "import" && <ImportAccountsModal onClose={() => setModal(null)} />}
+      {modal?.type === "credit" && (
+        <NewCreditModal onClose={() => setModal(null)} credit={modal.credit} />
+      )}
+      {modal?.type === "card" && (
+        <NewCreditCardModal onClose={() => setModal(null)} creditCard={modal.creditCard} />
+      )}
     </div>
   );
 }

@@ -21,6 +21,22 @@ export class CreditCardRepository {
     );
   }
 
+  update(creditCard: CreditCard): void {
+    this.db.run(
+      `UPDATE credit_cards
+       SET account_id = ?, name = ?, credit_limit = ?, closing_day = ?, due_day = ?
+       WHERE id = ?`,
+      [
+        creditCard.accountId,
+        creditCard.name,
+        creditCard.creditLimit ?? null,
+        creditCard.closingDay ?? null,
+        creditCard.dueDay ?? null,
+        creditCard.id,
+      ],
+    );
+  }
+
   findById(id: string): CreditCard | undefined {
     const result = this.db.exec("SELECT * FROM credit_cards WHERE id = ?", [id]);
     if (result.length === 0) return undefined;

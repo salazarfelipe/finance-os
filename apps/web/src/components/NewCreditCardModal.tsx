@@ -1,12 +1,20 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import type { CreditCard } from "@finance-os/domain";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { Modal } from "@/components/Modal";
 
-export function NewCreditCardModal({ onClose }: { onClose: () => void }) {
+export function NewCreditCardModal({
+  onClose,
+  creditCard,
+}: {
+  onClose: () => void;
+  creditCard?: CreditCard;
+}) {
   const app = useFinanceStore((state) => state.app);
   const refresh = useFinanceStore((state) => state.refresh);
+  const isEditing = !!creditCard;
 
   const creditCardAccounts = useMemo(
     () =>
@@ -16,11 +24,11 @@ export function NewCreditCardModal({ onClose }: { onClose: () => void }) {
     [app],
   );
 
-  const [name, setName] = useState("");
-  const [accountId, setAccountId] = useState("");
-  const [creditLimit, setCreditLimit] = useState("");
-  const [closingDay, setClosingDay] = useState("");
-  const [dueDay, setDueDay] = useState("");
+  const [name, setName] = useState(creditCard?.name ?? "");
+  const [accountId, setAccountId] = useState(creditCard?.accountId ?? "");
+  const [creditLimit, setCreditLimit] = useState(String(creditCard?.creditLimit ?? ""));
+  const [closingDay, setClosingDay] = useState(String(creditCard?.closingDay ?? ""));
+  const [dueDay, setDueDay] = useState(String(creditCard?.dueDay ?? ""));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
@@ -37,6 +45,21 @@ export function NewCreditCardModal({ onClose }: { onClose: () => void }) {
     setError(undefined);
     setMessage(undefined);
     try {
+      if (isEditing) {
+        app.creditCards.update({
+          ...creditCard,
+          name: name.trim(),
+          accountId,
+          creditLimit: creditLimit ? Number(creditLimit) : undefined,
+          closingDay: closingDay ? Number(closingDay) : undefined,
+          dueDay: dueDay ? Number(dueDay) : undefined,
+        });
+        await app.db.save();
+        refresh();
+        onClose();
+        return;
+      }
+
       app.creditCards.insert({
         id: app.ids.generate(),
         name: name.trim(),
@@ -62,7 +85,7 @@ export function NewCreditCardModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal title="Nueva tarjeta" onClose={onClose}>
+    <Modal title={isEditing ? "Editar tarjeta" : "Nueva tarjeta"} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
           Nombre
@@ -135,7 +158,7 @@ export function NewCreditCardModal({ onClose }: { onClose: () => void }) {
           disabled={submitting || creditCardAccounts.length === 0}
           className="mt-2 rounded bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
         >
-          {submitting ? "Guardando…" : "Crear tarjeta"}
+          {submitting ? "Guardando…" : isEditing ? "Guardar cambios" : "Crear tarjeta"}
         </button>
         {creditCardAccounts.length === 0 && (
           <p className="text-center text-xs text-zinc-500">

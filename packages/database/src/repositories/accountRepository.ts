@@ -22,6 +22,23 @@ export class AccountRepository {
     );
   }
 
+  update(account: Account): void {
+    this.db.run(
+      `UPDATE accounts
+       SET name = ?, kind = ?, subtype = ?, institution = ?, opening_balance = ?, is_archived = ?
+       WHERE id = ?`,
+      [
+        account.name,
+        account.kind,
+        account.subtype,
+        account.institution ?? null,
+        account.openingBalance,
+        account.isArchived ? 1 : 0,
+        account.id,
+      ],
+    );
+  }
+
   findAll(): Account[] {
     const result = this.db.exec("SELECT * FROM accounts ORDER BY created_at");
     if (result.length === 0) return [];

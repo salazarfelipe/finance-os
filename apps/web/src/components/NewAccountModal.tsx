@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { AccountKind, AccountSubtype } from "@finance-os/domain";
+import type { Account, AccountKind, AccountSubtype } from "@finance-os/domain";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { Modal } from "@/components/Modal";
 
@@ -20,15 +20,22 @@ const SUBTYPES_BY_KIND: Record<AccountKind, { value: AccountSubtype; label: stri
   ],
 };
 
-export function NewAccountModal({ onClose }: { onClose: () => void }) {
+export function NewAccountModal({
+  onClose,
+  account,
+}: {
+  onClose: () => void;
+  account?: Account;
+}) {
   const app = useFinanceStore((state) => state.app);
   const refresh = useFinanceStore((state) => state.refresh);
+  const isEditing = !!account;
 
-  const [name, setName] = useState("");
-  const [kind, setKind] = useState<AccountKind>("asset");
-  const [subtype, setSubtype] = useState<AccountSubtype>("bank");
-  const [institution, setInstitution] = useState("");
-  const [openingBalance, setOpeningBalance] = useState("");
+  const [name, setName] = useState(account?.name ?? "");
+  const [kind, setKind] = useState<AccountKind>(account?.kind ?? "asset");
+  const [subtype, setSubtype] = useState<AccountSubtype>(account?.subtype ?? "bank");
+  const [institution, setInstitution] = useState(account?.institution ?? "");
+  const [openingBalance, setOpeningBalance] = useState(String(account?.openingBalance ?? ""));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
@@ -47,6 +54,21 @@ export function NewAccountModal({ onClose }: { onClose: () => void }) {
     setError(undefined);
     setMessage(undefined);
     try {
+      if (isEditing) {
+        app.accounts.update({
+          ...account,
+          name: name.trim(),
+          kind,
+          subtype,
+          institution: institution.trim() || undefined,
+          openingBalance: amount,
+        });
+        await app.db.save();
+        refresh();
+        onClose();
+        return;
+      }
+
       app.accounts.insert({
         id: app.ids.generate(),
         name: name.trim(),
@@ -71,7 +93,7 @@ export function NewAccountModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal title="Nueva cuenta" onClose={onClose}>
+    <Modal title={isEditing ? "Editar cuenta" : "Nueva cuenta"} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
           Nombre
@@ -135,6 +157,11 @@ export function NewAccountModal({ onClose }: { onClose: () => void }) {
             onChange={(event) => setOpeningBalance(event.target.value)}
             placeholder="0"
           />
+          {isEditing && (
+            <span className="text-xs text-zinc-500">
+              Esto es el saldo de partida, no el saldo actual (que ya incluye tus movimientos).
+            </span>
+          )}
         </label>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
@@ -145,7 +172,7 @@ export function NewAccountModal({ onClose }: { onClose: () => void }) {
           disabled={submitting}
           className="mt-2 rounded bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
         >
-          {submitting ? "Guardando…" : "Crear cuenta"}
+          {submitting ? "Guardando…" : isEditing ? "Guardar cambios" : "Crear cuenta"}
         </button>
       </form>
     </Modal>

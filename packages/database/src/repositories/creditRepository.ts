@@ -22,6 +22,23 @@ export class CreditRepository {
     );
   }
 
+  update(credit: Credit): void {
+    this.db.run(
+      `UPDATE credits
+       SET account_id = ?, name = ?, principal_amount = ?, start_date = ?, term_months = ?, monthly_payment = ?
+       WHERE id = ?`,
+      [
+        credit.accountId,
+        credit.name,
+        credit.principalAmount,
+        credit.startDate,
+        credit.termMonths,
+        credit.monthlyPayment,
+        credit.id,
+      ],
+    );
+  }
+
   findById(id: string): Credit | undefined {
     const result = this.db.exec("SELECT * FROM credits WHERE id = ?", [id]);
     if (result.length === 0) return undefined;
