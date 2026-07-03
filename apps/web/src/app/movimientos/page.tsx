@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Event, EventType } from "@finance-os/domain";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { formatMoney } from "@/lib/money";
+import { RegisterMovementForm } from "@/components/RegisterMovementForm";
 
 const TYPE_LABELS: Record<EventType, string> = {
   income: "Ingreso",
@@ -20,6 +21,7 @@ export default function MovimientosPage() {
   const app = useFinanceStore((state) => state.app);
   const version = useFinanceStore((state) => state.version);
   const refresh = useFinanceStore((state) => state.refresh);
+  const [showForm, setShowForm] = useState(false);
 
   // version fuerza a releer después de cada mutación.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,9 +85,17 @@ export default function MovimientosPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 py-8">
-      <div>
-        <h1 className="text-xl font-semibold">Movimientos</h1>
-        <p className="text-sm text-zinc-500">Historial de todo lo que has registrado.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Movimientos</h1>
+          <p className="text-sm text-zinc-500">Historial de todo lo que has registrado.</p>
+        </div>
+        <button
+          onClick={() => setShowForm(true)}
+          className="rounded bg-black px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+        >
+          + Registrar movimiento
+        </button>
       </div>
 
       <ul className="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
@@ -119,6 +129,8 @@ export default function MovimientosPage() {
           );
         })}
       </ul>
+
+      {showForm && <RegisterMovementForm onClose={() => setShowForm(false)} />}
     </div>
   );
 }
