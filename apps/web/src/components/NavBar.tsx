@@ -6,6 +6,12 @@ export function NavBar() {
       <Link href="/" className="font-medium text-black dark:text-zinc-50">
         Dashboard
       </Link>
+      <Link
+        href="/movimientos"
+        className="text-zinc-500 hover:text-black dark:hover:text-zinc-50"
+      >
+        Movimientos
+      </Link>
       <Link href="/cuentas" className="text-zinc-500 hover:text-black dark:hover:text-zinc-50">
         Cuentas
       </Link>
