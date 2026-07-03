@@ -12,6 +12,7 @@ import {
 } from "@finance-os/application";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { registerEventDeps } from "@/lib/financeApp";
+import { Modal } from "@/components/Modal";
 
 type MovementType =
   | "expense"
@@ -164,18 +165,8 @@ export function RegisterMovementForm({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full max-w-md flex-col gap-3 rounded-lg bg-white p-6 dark:bg-zinc-900"
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Registrar movimiento</h2>
-          <button type="button" onClick={onClose} className="text-sm text-zinc-500">
-            Cerrar
-          </button>
-        </div>
-
+    <Modal title="Registrar movimiento" onClose={onClose}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-2 text-sm">
           {(
             [
@@ -373,6 +364,6 @@ export function RegisterMovementForm({ onClose }: { onClose: () => void }) {
           </p>
         )}
       </form>
-    </div>
+    </Modal>
   );
 }
