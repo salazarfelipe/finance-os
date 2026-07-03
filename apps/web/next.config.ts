@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
     // Assets estáticos (como sql-wasm.wasm) hay que pedirlos con el basePath a mano:
     // fetch()/indexedDB no pasan por el helper de Next que sí lo hace automáticamente.
     NEXT_PUBLIC_BASE_PATH: BASE_PATH,
+    // Client ID de OAuth para Sincronizar con Google Drive. No es secreto: solo el
+    // Client Secret lo sería, y el flujo de SPA (Google Identity Services) no lo usa.
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID:
+      "1091692304613-13gmual97sjc2h9d99641dstisedoqra.apps.googleusercontent.com",
   },
 };
 
